@@ -58,9 +58,11 @@ https://github.com/user-attachments/assets/5bad46b2-8276-4e1d-9480-3522640744b2
 ## 📑 Table of Contents
 
 - [💡 Key Features](#key-features)
+  - [🎯 Marketing & Content Creation Features](#-new-marketing--content-creation-features)
 - [🔮 Demos](#Video-Demos-Generated-from-Scratch)
 - [🏗️ Architecture](#️-architecture)
 - [🚀 Quick Start](#quick-start)
+- [📢 Marketing Guide](MARKETING_GUIDE.md) - Complete guide for VSLs & Documentaries
 
 ---
 ## 💡Key Features
@@ -158,6 +160,78 @@ https://github.com/user-attachments/assets/5bad46b2-8276-4e1d-9480-3522640744b2
 </td>
 </tr>
 </table>
+
+<br/>
+
+### 🎯 **NEW: Marketing & Content Creation Features**
+
+<table align="center" width="100%" style="border: none; table-layout: fixed;">
+<tr>
+<td width="33%" align="center" style="vertical-align: top; padding: 20px;">
+
+<div style="height: 80px; display: flex; align-items: center; justify-content: center;">
+<h3 style="margin: 0; padding: 0;">📢 <strong>VSL2Video</strong></h3>
+</div>
+
+<div align="center" style="margin: 15px 0;">
+  <img src="https://img.shields.io/badge/VIDEO-SALES-ff6b6b?style=for-the-badge&logo=trending-up&logoColor=white" alt="VSL Badge" />
+</div>
+
+<div style="height: 80px; display: flex; align-items: center; justify-content: center;">
+<p align="center"><strong>High-Converting Sales Videos</strong></p>
+</div>
+
+<div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+<p align="center">Generate <strong>Video Sales Letters (VSLs)</strong> from 5-40 minutes, optimized for <strong>TikTok ads, landing pages, and Facebook campaigns</strong> with proven conversion frameworks.</p>
+</div>
+
+</td>
+<td width="33%" align="center" style="vertical-align: top; padding: 20px;">
+
+<div style="height: 80px; display: flex; align-items: center; justify-content: center;">
+<h3 style="margin: 0; padding: 0;">🎬 <strong>Documentary2Video</strong></h3>
+</div>
+
+<div align="center" style="margin: 15px 0;">
+  <img src="https://img.shields.io/badge/FACELESS-YOUTUBE-4ecdc4?style=for-the-badge&logo=youtube&logoColor=white" alt="Documentary Badge" />
+</div>
+
+<div style="height: 80px; display: flex; align-items: center; justify-content: center;">
+<p align="center"><strong>Faceless YouTube Documentaries</strong></p>
+</div>
+
+<div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+<p align="center">Create <strong>long-form documentaries</strong> (10-40 min) with voiceover, b-roll planning, and chapter timestamps, optimized for <strong>maximum watch time</strong>.</p>
+</div>
+
+</td>
+<td width="33%" align="center" style="vertical-align: top; padding: 20px;">
+
+<div style="height: 80px; display: flex; align-items: center; justify-content: center;">
+<h3 style="margin: 0; padding: 0;">🎨 <strong>Marketing Assets</strong></h3>
+</div>
+
+<div align="center" style="margin: 15px 0;">
+  <img src="https://img.shields.io/badge/THUMBNAILS-HEADLINES-9b59b6?style=for-the-badge&logo=image&logoColor=white" alt="Assets Badge" />
+</div>
+
+<div style="height: 80px; display: flex; align-items: center; justify-content: center;">
+<p align="center"><strong>A/B Testing Assets</strong></p>
+</div>
+
+<div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+<p align="center">Generate <strong>5+ thumbnail variations</strong> and <strong>10+ headline options</strong> for each video, optimized for <strong>click-through rates</strong> and conversions.</p>
+</div>
+
+</td>
+</tr>
+</table>
+
+<div align="center" style="margin: 20px 0;">
+  <a href="MARKETING_GUIDE.md">
+    <img src="https://img.shields.io/badge/📖%20Complete%20Marketing%20Guide-Read%20Now-00d9ff?style=for-the-badge&logo=book&logoColor=white&labelColor=1a1a2e">
+  </a>
+</div>
 
 <br/>
 

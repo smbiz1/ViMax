@@ -8,8 +8,7 @@ from typing import Optional, List, Literal
 from moviepy import VideoFileClip, concatenate_videoclips
 from PIL import Image
 
-from agents import DocumentaryScriptwriter, ThumbnailGenerator, HeadlineGenerator, StoryboardArtist, CameraImageGenerator
-from interfaces import DocumentaryScript, DocumentarySegment, MarketingThumbnail, MarketingHeadline
+from agents import DocumentaryScriptwriter, ThumbnailGenerator, HeadlineGenerator
 from langchain.chat_models import init_chat_model
 from utils.timer import Timer
 
@@ -43,12 +42,6 @@ class Documentary2VideoPipeline:
         self.documentary_scriptwriter = DocumentaryScriptwriter(chat_model=self.chat_model)
         self.thumbnail_generator = ThumbnailGenerator(chat_model=self.chat_model)
         self.headline_generator = HeadlineGenerator(chat_model=self.chat_model)
-        self.storyboard_artist = StoryboardArtist(chat_model=self.chat_model)
-        self.camera_image_generator = CameraImageGenerator(
-            chat_model=self.chat_model,
-            image_generator=self.image_generator,
-            video_generator=self.video_generator
-        )
 
         self.working_dir = working_dir
         os.makedirs(self.working_dir, exist_ok=True)
@@ -261,19 +254,15 @@ class Documentary2VideoPipeline:
 
             try:
                 # Generate image using the image generator
-                image_output = await self.image_generator.generate(
+                image_output = await self.image_generator.generate_single_image(
                     prompt=image_prompt,
-                    aspect_ratio="16:9",
-                    reference_images=None,
+                    reference_image_paths=[],
+                    size="1920x1080",  # YouTube thumbnail size
                 )
 
                 # Save image
                 thumbnail_path = os.path.join(output_dir, f"thumbnail_{i+1}_{concept['title'].replace(' ', '_')}.png")
-                if isinstance(image_output, Image.Image):
-                    image_output.save(thumbnail_path)
-                else:
-                    # Handle different image output formats
-                    image_output.image.save(thumbnail_path)
+                image_output.save(thumbnail_path)
 
                 thumbnail_paths.append(thumbnail_path)
                 print(f"  ✅ Saved to {thumbnail_path}")

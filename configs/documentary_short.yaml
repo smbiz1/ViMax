@@ -1,0 +1,23 @@
+# Configuration for Short Documentary (under 10 minutes)
+# Optimized for test segments to validate ideas before creating full documentaries
+
+chat_model:
+  init_args:
+    model: google/gemini-2.5-flash-lite-preview-09-2025
+    model_provider: openai
+    api_key:
+    base_url: https://openrouter.ai/api/v1
+
+
+image_generator:
+  class_path: tools.ImageGeneratorNanobananaGoogleAPI
+  init_args:
+    api_key:
+
+
+video_generator:
+  class_path: tools.VideoGeneratorVeoGoogleAPI
+  init_args:
+    api_key:
+
+working_dir: .working_dir/documentary_short

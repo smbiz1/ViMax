@@ -6,6 +6,14 @@ from .image_output import ImageOutput
 from .scene import Scene
 from .shot_description import ShotDescription, ShotBriefDescription
 from .video_output import VideoOutput
+from .vsl_content import (
+    VSLSection,
+    VSLScript,
+    MarketingThumbnail,
+    MarketingHeadline,
+    DocumentarySegment,
+    DocumentaryScript,
+)
 
 __all__ = [
     "Camera",
@@ -19,4 +27,10 @@ __all__ = [
     "ShotBriefDescription",
     "ShotDescription",
     "VideoOutput",
+    "VSLSection",
+    "VSLScript",
+    "MarketingThumbnail",
+    "MarketingHeadline",
+    "DocumentarySegment",
+    "DocumentaryScript",
 ]

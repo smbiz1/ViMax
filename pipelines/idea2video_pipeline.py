@@ -9,7 +9,9 @@ import json
 from moviepy import VideoFileClip, concatenate_videoclips
 import yaml
 from langchain.chat_models import init_chat_model
+from utils.rate_limiter import RateLimiter
 import importlib
+
 
 class Idea2VideoPipeline:
     def __init__(
@@ -26,8 +28,10 @@ class Idea2VideoPipeline:
         os.makedirs(self.working_dir, exist_ok=True)
 
         self.screenwriter = Screenwriter(chat_model=self.chat_model)
-        self.character_extractor = CharacterExtractor(chat_model=self.chat_model)
-        self.character_portraits_generator = CharacterPortraitsGenerator(image_generator=self.image_generator)
+        self.character_extractor = CharacterExtractor(
+            chat_model=self.chat_model)
+        self.character_portraits_generator = CharacterPortraitsGenerator(
+            image_generator=self.image_generator)
 
     @classmethod
     def init_from_config(
@@ -40,14 +44,68 @@ class Idea2VideoPipeline:
         chat_model_args = config["chat_model"]["init_args"]
         chat_model = init_chat_model(**chat_model_args)
 
-        image_generator_cls_module, image_generator_cls_name = config["image_generator"]["class_path"].rsplit(".", 1)
-        image_generator_cls = getattr(importlib.import_module(image_generator_cls_module), image_generator_cls_name)
+        # Create separate rate limiters for each service
+        chat_model_rpm = config.get("chat_model", {}).get("max_requests_per_minute", None)
+        chat_model_rpd = config.get("chat_model", {}).get("max_requests_per_day", None)
+        image_generator_rpm = config.get("image_generator", {}).get("max_requests_per_minute", None)
+        image_generator_rpd = config.get("image_generator", {}).get("max_requests_per_day", None)
+        video_generator_rpm = config.get("video_generator", {}).get("max_requests_per_minute", None)
+        video_generator_rpd = config.get("video_generator", {}).get("max_requests_per_day", None)
+
+        chat_model_rate_limiter = RateLimiter(
+            max_requests_per_minute=chat_model_rpm,
+            max_requests_per_day=chat_model_rpd
+        ) if (chat_model_rpm or chat_model_rpd) else None
+
+        image_rate_limiter = RateLimiter(
+            max_requests_per_minute=image_generator_rpm,
+            max_requests_per_day=image_generator_rpd
+        ) if (image_generator_rpm or image_generator_rpd) else None
+
+        video_rate_limiter = RateLimiter(
+            max_requests_per_minute=video_generator_rpm,
+            max_requests_per_day=video_generator_rpd
+        ) if (video_generator_rpm or video_generator_rpd) else None
+
+        # Display rate limiting configuration
+        if chat_model_rate_limiter:
+            limits = []
+            if chat_model_rpm:
+                limits.append(f"{chat_model_rpm} req/min")
+            if chat_model_rpd:
+                limits.append(f"{chat_model_rpd} req/day")
+            print(f"Chat model rate limiting: {', '.join(limits)}")
+
+        if image_rate_limiter:
+            limits = []
+            if image_generator_rpm:
+                limits.append(f"{image_generator_rpm} req/min")
+            if image_generator_rpd:
+                limits.append(f"{image_generator_rpd} req/day")
+            print(f"Image generator rate limiting: {', '.join(limits)}")
+
+        if video_rate_limiter:
+            limits = []
+            if video_generator_rpm:
+                limits.append(f"{video_generator_rpm} req/min")
+            if video_generator_rpd:
+                limits.append(f"{video_generator_rpd} req/day")
+            print(f"Video generator rate limiting: {', '.join(limits)}")
+
+        image_generator_cls_module, image_generator_cls_name = config["image_generator"]["class_path"].rsplit(
+            ".", 1)
+        image_generator_cls = getattr(importlib.import_module(
+            image_generator_cls_module), image_generator_cls_name)
         image_generator_args = config["image_generator"]["init_args"]
+        image_generator_args["rate_limiter"] = image_rate_limiter
         image_generator = image_generator_cls(**image_generator_args)
 
-        video_generator_cls_module, video_generator_cls_name = config["video_generator"]["class_path"].rsplit(".", 1)
-        video_generator_cls = getattr(importlib.import_module(video_generator_cls_module), video_generator_cls_name)
+        video_generator_cls_module, video_generator_cls_name = config["video_generator"]["class_path"].rsplit(
+            ".", 1)
+        video_generator_cls = getattr(importlib.import_module(
+            video_generator_cls_module), video_generator_cls_name)
         video_generator_args = config["video_generator"]["init_args"]
+        video_generator_args["rate_limiter"] = video_rate_limiter
         video_generator = video_generator_cls(**video_generator_args)
 
         return cls(
@@ -66,16 +124,18 @@ class Idea2VideoPipeline:
         if os.path.exists(save_path):
             with open(save_path, "r", encoding="utf-8") as f:
                 characters = json.load(f)
-            characters = [CharacterInScene.model_validate(character) for character in characters]
+            characters = [CharacterInScene.model_validate(
+                character) for character in characters]
             print(f"🚀 Loaded {len(characters)} characters from existing file.")
         else:
             characters = await self.character_extractor.extract_characters(story)
             with open(save_path, "w", encoding="utf-8") as f:
-                json.dump([character.model_dump() for character in characters], f, ensure_ascii=False, indent=4)
-            print(f"✅ Extracted {len(characters)} characters from story and saved to {save_path}.")
+                json.dump([character.model_dump()
+                          for character in characters], f, ensure_ascii=False, indent=4)
+            print(
+                f"✅ Extracted {len(characters)} characters from story and saved to {save_path}.")
 
         return characters
-
 
     async def generate_character_portraits(
         self,
@@ -83,14 +143,14 @@ class Idea2VideoPipeline:
         character_portraits_registry: Optional[Dict[str, Dict[str, Dict[str, str]]]],
         style: str,
     ):
-        character_portraits_registry_path = os.path.join(self.working_dir, "character_portraits_registry.json")
+        character_portraits_registry_path = os.path.join(
+            self.working_dir, "character_portraits_registry.json")
         if character_portraits_registry is None:
             if os.path.exists(character_portraits_registry_path):
                 with open(character_portraits_registry_path, 'r', encoding='utf-8') as f:
                     character_portraits_registry = json.load(f)
             else:
                 character_portraits_registry = {}
-
 
         tasks = [
             self.generate_portraits_for_single_character(character, style)
@@ -101,15 +161,16 @@ class Idea2VideoPipeline:
             for future in asyncio.as_completed(tasks):
                 character_portraits_registry.update(await future)
                 with open(character_portraits_registry_path, 'w', encoding='utf-8') as f:
-                    json.dump(character_portraits_registry, f, ensure_ascii=False, indent=4)
+                    json.dump(character_portraits_registry,
+                              f, ensure_ascii=False, indent=4)
 
-            print(f"✅ Completed character portrait generation for {len(characters)} characters.")
+            print(
+                f"✅ Completed character portrait generation for {len(characters)} characters.")
         else:
-            print("🚀 All characters already have portraits, skipping portrait generation.")
+            print(
+                "🚀 All characters already have portraits, skipping portrait generation.")
 
         return character_portraits_registry
-
-
 
     async def develop_story(
         self,
@@ -130,7 +191,6 @@ class Idea2VideoPipeline:
 
         return story
 
-
     async def write_script_based_on_story(
         self,
         story: str,
@@ -149,13 +209,13 @@ class Idea2VideoPipeline:
             print(f"✅ Written script based on story and saved to {save_path}.")
         return script
 
-
     async def generate_portraits_for_single_character(
         self,
         character: CharacterInScene,
         style: str,
     ):
-        character_dir = os.path.join(self.working_dir, "character_portraits", f"{character.idx}_{character.identifier_in_scene}")
+        character_dir = os.path.join(
+            self.working_dir, "character_portraits", f"{character.idx}_{character.identifier_in_scene}")
         os.makedirs(character_dir, exist_ok=True)
 
         front_portrait_path = os.path.join(character_dir, "front.png")
@@ -164,7 +224,6 @@ class Idea2VideoPipeline:
         else:
             front_portrait_output = await self.character_portraits_generator.generate_front_portrait(character, style)
             front_portrait_output.save(front_portrait_path)
-
 
         side_portrait_path = os.path.join(character_dir, "side.png")
         if os.path.exists(side_portrait_path):
@@ -180,7 +239,8 @@ class Idea2VideoPipeline:
             back_portrait_output = await self.character_portraits_generator.generate_back_portrait(character, front_portrait_path)
             back_portrait_output.save(back_portrait_path)
 
-        print(f"☑️ Completed character portrait generation for {character.identifier_in_scene}.")
+        print(
+            f"☑️ Completed character portrait generation for {character.identifier_in_scene}.")
 
         return {
             character.identifier_in_scene: {
@@ -243,7 +303,8 @@ class Idea2VideoPipeline:
             print(f"🚀 Skipped concatenating videos, already exists.")
         else:
             print(f"🎬 Starting concatenating videos...")
-            video_clips = [VideoFileClip(final_video_path) for final_video_path in all_video_paths]
+            video_clips = [VideoFileClip(final_video_path)
+                           for final_video_path in all_video_paths]
             final_video = concatenate_videoclips(video_clips)
             final_video.write_videofile(final_video_path)
             print(f"☑️ Concatenated videos, saved to {final_video_path}.")

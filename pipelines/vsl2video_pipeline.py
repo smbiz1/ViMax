@@ -11,6 +11,7 @@ from PIL import Image
 from agents import VSLScriptwriter, ThumbnailGenerator, HeadlineGenerator
 from langchain.chat_models import init_chat_model
 from utils.timer import Timer
+from utils.rate_limiter import RateLimiter
 
 
 class VSL2VideoPipeline:
@@ -54,6 +55,13 @@ class VSL2VideoPipeline:
         # Initialize chat model
         chat_model_args = config["chat_model"]["init_args"]
         chat_model = init_chat_model(**chat_model_args)
+        # Create chat model rate limiter if configured
+        chat_model_rpm = config.get("chat_model", {}).get("max_requests_per_minute", None)
+        chat_model_rpd = config.get("chat_model", {}).get("max_requests_per_day", None)
+        chat_model_rate_limiter = RateLimiter(
+            max_requests_per_minute=chat_model_rpm,
+            max_requests_per_day=chat_model_rpd
+        ) if (chat_model_rpm or chat_model_rpd) else None
 
         # Initialize image generator
         image_generator_cls_module, image_generator_cls_name = config["image_generator"]["class_path"].rsplit(".", 1)
@@ -67,12 +75,17 @@ class VSL2VideoPipeline:
         video_generator_args = config["video_generator"]["init_args"]
         video_generator = video_generator_cls(**video_generator_args)
 
-        return cls(
+        pipeline = cls(
             chat_model=chat_model,
             image_generator=image_generator,
             video_generator=video_generator,
             working_dir=config["working_dir"],
         )
+        # pass rate_limiter into agents if present
+        pipeline.vsl_scriptwriter.rate_limiter = chat_model_rate_limiter
+        pipeline.thumbnail_generator.rate_limiter = chat_model_rate_limiter
+        pipeline.headline_generator.rate_limiter = chat_model_rate_limiter
+        return pipeline
 
     async def generate_vsl_script(
         self,

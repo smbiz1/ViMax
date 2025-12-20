@@ -4,11 +4,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.chat_models import init_chat_model
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt
+from tenacity import stop_after_attempt
+from utils.retry import retry, after_func
 
 
-system_prompt_template_write_vsl_script = \
-"""
+system_prompt_template_write_vsl_script = """
 [Role]
 You are an expert Video Sales Letter (VSL) copywriter and marketing strategist with deep expertise in:
 - Direct Response Marketing: Mastery of persuasion psychology, emotional triggers, and proven VSL frameworks (PAS, AIDA, Problem-Agitate-Solve)
@@ -85,8 +85,7 @@ For LONG FORM (10-40 minutes - Landing Page VSLs):
 """
 
 
-human_prompt_template_write_vsl_script = \
-"""
+human_prompt_template_write_vsl_script = """
 <PRODUCT>
 {product}
 </PRODUCT>
@@ -121,10 +120,11 @@ class VSLScriptwriter:
 
     def __init__(
         self,
-        chat_model: str,
+        chat_model,
     ):
         self.chat_model = chat_model
 
+    @retry(stop=stop_after_attempt(3), after=after_func)
     async def write_vsl_script(
         self,
         product: str,
@@ -152,19 +152,17 @@ class VSLScriptwriter:
         class VSLScriptResponse(BaseModel):
             script: str = Field(
                 ...,
-                description="The complete VSL script with timestamps and section markers"
+                description="The complete VSL script with timestamps and section markers",
             )
             hooks: List[str] = Field(
-                ...,
-                description="3-5 alternative hook variations for A/B testing"
+                ..., description="3-5 alternative hook variations for A/B testing"
             )
             visual_suggestions: List[str] = Field(
-                ...,
-                description="Key visual b-roll suggestions throughout the script"
+                ..., description="Key visual b-roll suggestions throughout the script"
             )
             key_moments: List[str] = Field(
                 ...,
-                description="Critical timestamps and moments (e.g., 'Problem reveal at 0:15', 'CTA at 8:30')"
+                description="Critical timestamps and moments (e.g., 'Problem reveal at 0:15', 'CTA at 8:30')",
             )
 
         parser = PydanticOutputParser(pydantic_object=VSLScriptResponse)
@@ -174,20 +172,28 @@ class VSLScriptwriter:
         duration_map = {
             "short": "under 5 minutes (optimized for TikTok, Shorts, quick ads)",
             "medium": "5-10 minutes (optimized for long form ads, mini VSLs)",
-            "long": "10-40 minutes (optimized for landing page VSLs)"
+            "long": "10-40 minutes (optimized for landing page VSLs)",
         }
         duration_text = duration_map.get(duration, duration)
 
         messages = [
-            ("system", system_prompt_template_write_vsl_script.format(format_instructions=format_instructions)),
-            ("human", human_prompt_template_write_vsl_script.format(
-                product=product,
-                audience=audience,
-                benefits=benefits,
-                duration=duration_text,
-                platform=platform,
-                requirements=requirements or "None"
-            )),
+            (
+                "system",
+                system_prompt_template_write_vsl_script.format(
+                    format_instructions=format_instructions
+                ),
+            ),
+            (
+                "human",
+                human_prompt_template_write_vsl_script.format(
+                    product=product,
+                    audience=audience,
+                    benefits=benefits,
+                    duration=duration_text,
+                    platform=platform,
+                    requirements=requirements or "None",
+                ),
+            ),
         ]
 
         response = await self.chat_model.ainvoke(messages)

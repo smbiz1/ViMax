@@ -70,3 +70,36 @@ Plan to align Marketing Guide, docs, and marketing agent code with upstream rate
 - Minimal change policy: keep edits short and consistent with upstream patterns; only add rate-limiter/retry where there is an LLM/API call that may be rate-limited. Document config key names in the marketing guide.
 
 Next action: edit `agents/vsl_scriptwriter.py` and then run linter + update docs/logs.
+
+Current status of marketing-related files (quick scan)
+
+- **Already updated / match upstream patterns**
+  - `tools/image_generator_nanobanana_google_api.py` — imports `after_func`, uses `@retry(..., after=after_func)`, calls `RateLimiter.acquire()` before API calls.
+  - `tools/video_generator_veo_google_api.py` — accepts `rate_limiter` and calls `await rate_limiter.acquire()` before API calls; uses manual 429 retry loop.
+  - `pipelines/script2video_pipeline.py` — constructs `RateLimiter` from config keys (`max_requests_per_minute`, `max_requests_per_day`) and injects into image/video tool init args.
+  - `pipelines/idea2video_pipeline.py` — same as `script2video_pipeline.py`.
+  - `utils/rate_limiter.py` and `utils/retry.py` — present and provide `RateLimiter` and `after_func` utilities.
+
+- **Need edits (marketing agent files)**
+  - `agents/vsl_scriptwriter.py` — HIGH priority:
+    - Remove or relax `chat_model: str` type hint in `__init__`.
+    - Replace tenacity-only `retry` import with `from utils.retry import retry, after_func`.
+    - Add `@retry(stop=stop_after_attempt(3), after=after_func)` to `write_vsl_script`.
+  - `agents/documentary_scriptwriter.py` — MED:
+    - Relax `chat_model` type hint; consider adding `@retry(..., after=after_func)` to `write_documentary_script`.
+  - `agents/thumbnail_generator.py` — MED:
+    - Relax `chat_model` type hint; add retry decorator to `generate_thumbnail_concepts` if LLM calls are expensive.
+  - `agents/headline_generator.py` — MED:
+    - Relax `chat_model` type hint; add retry decorator to `generate_headlines`.
+
+- **Files removed upstream (review before merging)**
+  - Upstream removed several marketing files (e.g., `MARKETING_GUIDE.md`, `agents/vsl_scriptwriter.py`, `agents/thumbnail_generator.py`, `agents/headline_generator.py`, `main_vsl.py`, `main_documentary.py`). If you merge upstream, decide whether to keep our versions or accept upstream deletions. Use `git checkout --ours` to keep local copies during conflict resolution.
+
+Proposed immediate next steps
+1. Apply minimal edits to `agents/vsl_scriptwriter.py` (safe, small changes).
+2. Run linter/tests locally and push to `origin/v1`.
+3. Optionally apply same small pattern to `documentary_scriptwriter.py`, `thumbnail_generator.py`, `headline_generator.py`.
+4. Add a short note to `ViMax/MARKETING_GUIDE.md` describing `max_requests_per_minute` and retry guidance.
+5. Update today's project log with the edits and reasoning.
+
+I'll start by editing `agents/vsl_scriptwriter.py` unless you prefer to prioritize documentation first.

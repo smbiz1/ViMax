@@ -3,6 +3,8 @@ from typing import List, Optional, Literal
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
+from tenacity import stop_after_attempt
+from utils.retry import retry, after_func
 
 
 system_prompt_template_generate_headlines = \
@@ -148,9 +150,11 @@ class HeadlineGenerator:
 
     def __init__(
         self,
-        chat_model: str,
+        chat_model,
+        rate_limiter: Optional[object] = None,
     ):
         self.chat_model = chat_model
+        self.rate_limiter = rate_limiter
 
     async def generate_headlines(
         self,
@@ -226,6 +230,8 @@ class HeadlineGenerator:
             )),
         ]
 
+        if getattr(self, "rate_limiter", None):
+            await self.rate_limiter.acquire()
         response = await self.chat_model.ainvoke(messages)
         parsed_response = parser.parse(response.content)
 

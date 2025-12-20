@@ -1,0 +1,34 @@
+2025-12-20 Marketing Update
+===========================
+
+Summary:
+- Aligned marketing agents with upstream rate-limiting and retry patterns.
+- Edited agent constructors to accept an optional `rate_limiter` and store it.
+- Added `await self.rate_limiter.acquire()` before `chat_model.ainvoke(...)` calls where appropriate.
+- Added retry decorators using `@retry(stop=stop_after_attempt(3), after=after_func)` to expensive LLM methods.
+- Wired `chat_model` rate limiter into `VSL2VideoPipeline` during initialization so agents receive the limiter.
+
+Files changed:
+- Modified: `ViMax/agents/vsl_scriptwriter.py`
+  - Removed `chat_model: str` type hint, imported `retry, after_func`, added retry decorator to `write_vsl_script`.
+
+- Modified: `ViMax/agents/documentary_scriptwriter.py`
+  - Removed `chat_model: str` type hint, added `rate_limiter` parameter and storage, added retry decorator and acquire call.
+
+- Modified: `ViMax/agents/thumbnail_generator.py`
+  - Removed `chat_model: str` type hint, added `rate_limiter` parameter and storage, added acquire call before LLM call.
+
+- Modified: `ViMax/agents/headline_generator.py`
+  - Removed `chat_model: str` type hint, added `rate_limiter` parameter and storage, added acquire call before LLM call.
+
+- Modified: `ViMax/pipelines/vsl2video_pipeline.py`
+  - Constructed `chat_model_rate_limiter` from config values (`max_requests_per_minute`, `max_requests_per_day`) and injected into pipeline agents.
+
+Notes:
+- The change follows upstream pattern: `RateLimiter` lives in `utils/rate_limiter.py` and retry helper `after_func` in `utils/retry.py`.
+- If merging upstream later, be prepared to resolve deletions upstream made to some marketing files — prefer keeping your local versions unless you want upstream's deletions.
+- Next tasks: apply same pipeline wiring to other pipelines (idea2video, script2video) where marketing agents are used; update `ViMax/MARKETING_GUIDE.md`; run end-to-end smoke tests.
+
+Signed-off-by: Automated edit by assistant on behalf of developer
+
+
